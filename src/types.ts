@@ -5,6 +5,7 @@ export type LegPlacement = 'under_frame' | 'corner_post';
 export interface WoodSpecies {
   id: string;
   nameFi: string;
+  name?: string;
   botanicalName: string;
   category: WoodCategory;
   density: number; // kg/m³

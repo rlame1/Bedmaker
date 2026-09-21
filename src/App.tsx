@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BedConfig, WoodSpecies } from './types';
 import { WOOD_SPECIES, STANDARD_MATTRESS_SIZES } from './data/woodSpecies';
+import { translations } from './i18n/translations';
 import { calculateStructuralStrength, calculateVentilation } from './utils/engineering';
 import { generateBOM, optimizeCuttingPlan } from './utils/optimizer';
 import { DimensionInputs } from './components/DimensionInputs';
@@ -27,7 +28,7 @@ import {
 } from 'lucide-react';
 
 const DEFAULT_CONFIG: BedConfig = {
-  name: 'Standardi Parisänky 160×200',
+  name: 'Standard Double Bed 160×200',
   constructionStyle: 'recessed',
   mattressWidth: 1600,
   mattressLength: 2000,
@@ -69,6 +70,14 @@ const DEFAULT_CONFIG: BedConfig = {
 };
 
 export default function App() {
+  const [lang, setLang] = useState<'en' | 'fi'>(() => {
+    const saved = localStorage.getItem('bed_crafter_lang');
+    if (saved === 'en' || saved === 'fi') return saved;
+    return 'en'; // default English as requested
+  });
+
+  const t = translations[lang];
+
   const [config, setConfig] = useState<BedConfig>(() => {
     const saved = localStorage.getItem('bed_crafter_config');
     if (saved) {
@@ -87,7 +96,10 @@ export default function App() {
     handleUpdateConfig({ useSeparateSlatWood: enable });
   };
 
-  // Tallennetaan asetukset selaimeen
+  useEffect(() => {
+    localStorage.setItem('bed_crafter_lang', lang);
+  }, [lang]);
+
   useEffect(() => {
     localStorage.setItem('bed_crafter_config', JSON.stringify(config));
   }, [config]);
@@ -97,21 +109,41 @@ export default function App() {
   };
 
   const handleReset = () => {
-    if (window.confirm('Haluatko palauttaa oletusasetukset (Standardi parisänky 160x200)?')) {
+    if (window.confirm(t.resetConfirm)) {
       setConfig(DEFAULT_CONFIG);
       setUseSeparateSlatWood(true);
     }
   };
 
-  // Puulajit
+  // Puulajit lokalisoituna
   const frameWood = useMemo(() => {
-    return WOOD_SPECIES.find((w) => w.id === config.woodSpeciesId) || WOOD_SPECIES[0];
-  }, [config.woodSpeciesId]);
+    const base = WOOD_SPECIES.find((w) => w.id === config.woodSpeciesId) || WOOD_SPECIES[0];
+    const tWood = t.woodSpecies[base.id as keyof typeof t.woodSpecies];
+    if (!tWood) return base;
+    return {
+      ...base,
+      name: tWood.name,
+      description: tWood.description,
+      pros: tWood.pros,
+      cons: tWood.cons,
+      workability: tWood.workability as any,
+    };
+  }, [config.woodSpeciesId, lang, t]);
 
   const slatWood = useMemo(() => {
     if (!useSeparateSlatWood) return frameWood;
-    return WOOD_SPECIES.find((w) => w.id === config.slatWoodSpeciesId) || frameWood;
-  }, [config.slatWoodSpeciesId, frameWood, useSeparateSlatWood]);
+    const base = WOOD_SPECIES.find((w) => w.id === config.slatWoodSpeciesId) || frameWood;
+    const tWood = t.woodSpecies[base.id as keyof typeof t.woodSpecies];
+    if (!tWood) return base;
+    return {
+      ...base,
+      name: tWood.name,
+      description: tWood.description,
+      pros: tWood.pros,
+      cons: tWood.cons,
+      workability: tWood.workability as any,
+    };
+  }, [config.slatWoodSpeciesId, frameWood, useSeparateSlatWood, lang, t]);
 
   // Tuuletus ja säleet
   const ventilation = useMemo(() => {
@@ -137,7 +169,7 @@ export default function App() {
   const applyPresetProfile = (type: 'single' | 'double' | 'oak' | 'tatami' | 'top_beam') => {
     if (type === 'single') {
       handleUpdateConfig({
-        name: 'Yhden hengen sänky 90×200',
+        name: lang === 'en' ? 'Single Bed 90×200' : 'Yhden hengen sänky 90×200',
         constructionStyle: 'recessed',
         mattressWidth: 900,
         mattressLength: 2000,
@@ -156,7 +188,7 @@ export default function App() {
       });
     } else if (type === 'double') {
       handleUpdateConfig({
-        name: 'Standardi Parisänky 160×200',
+        name: lang === 'en' ? 'Standard Double Bed 160×200' : 'Standardi Parisänky 160×200',
         constructionStyle: 'recessed',
         mattressWidth: 1600,
         mattressLength: 2000,
@@ -176,7 +208,7 @@ export default function App() {
       });
     } else if (type === 'oak') {
       handleUpdateConfig({
-        name: 'Massiivitammi King Size 180×200',
+        name: lang === 'en' ? 'Solid Oak King Size 180×200' : 'Massiivitammi King Size 180×200',
         constructionStyle: 'recessed',
         mattressWidth: 1800,
         mattressLength: 2000,
@@ -196,7 +228,7 @@ export default function App() {
       });
     } else if (type === 'tatami') {
       handleUpdateConfig({
-        name: 'Matalarunkoinen Tatami-sänky 160×200',
+        name: lang === 'en' ? 'Low-profile Tatami Bed 160×200' : 'Matalarunkoinen Tatami-sänky 160×200',
         constructionStyle: 'recessed',
         mattressWidth: 1600,
         mattressLength: 2000,
@@ -216,7 +248,7 @@ export default function App() {
       });
     } else if (type === 'top_beam') {
       handleUpdateConfig({
-        name: 'Tasarunko (Säleet laitojen ja keskipalkin päällä) 160×200',
+        name: lang === 'en' ? 'Top-Mounted Platform Bed 160×200' : 'Tasarunko (Säleet laitojen ja keskipalkin päällä) 160×200',
         constructionStyle: 'top_mounted',
         mattressWidth: 1600,
         mattressLength: 2000,
@@ -252,20 +284,31 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-extrabold text-stone-900 tracking-tight">
-                  Sängynvalmistus &amp; Kestävyyslaskuri
+                  {t.appName}
                 </h1>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-900">
-                  Puusepän Studio
+                  {t.tagline}
                 </span>
               </div>
               <p className="text-xs text-stone-500 hidden sm:block">
-                Mitoitus, kestävyyslaskenta pistekuormalla, materiaalilistat ja leikkausoptimointi
+                {t.appSubtitle}
               </p>
             </div>
           </div>
 
           {/* Pikaindikaattorit */}
           <div className="flex items-center gap-2.5">
+            {/* Kieli / Language toggle */}
+            <button
+              type="button"
+              onClick={() => setLang(lang === 'en' ? 'fi' : 'en')}
+              className="px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+              title="Change Language / Vaihda kieli"
+            >
+              <span>🌐</span>
+              <span>{lang === 'en' ? '🇬🇧 English' : '🇫🇮 Suomi'}</span>
+            </button>
+
             {/* Kestävyyspilleri */}
             <button
               type="button"
@@ -277,19 +320,18 @@ export default function App() {
                   ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
                   : 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
               }`}
-              title="Avaa kestävyyslaskuri ja kuormituskaaviot"
             >
               {strengthMetrics.overallStatus === 'safe' && <ShieldCheck className="w-4 h-4 text-emerald-600" />}
               {strengthMetrics.overallStatus === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-600" />}
               {strengthMetrics.overallStatus === 'danger' && <AlertOctagon className="w-4 h-4 text-rose-600" />}
               <span>
-                Pistekuorma: <strong>{config.pointLoadKg} kg</strong> (Säle {config.slatThickness} mm → {strengthMetrics.slatMaxPointLoadKg ?? strengthMetrics.maxAllowablePointLoadKg} kg)
+                {t.pointLoadLabel}: <strong>{config.pointLoadKg} kg</strong>
               </span>
             </button>
 
             {/* Hinta-arviopilleri */}
             <div className="hidden md:flex px-3 py-1.5 rounded-lg border border-stone-200 bg-stone-50 text-xs font-mono font-medium text-stone-700">
-              Puu: <strong className="text-stone-900 ml-1">~{bomData.estimatedCostEur} €</strong>
+              {t.woodCost}: <strong className="text-stone-900 ml-1">~{bomData.estimatedCostEur} €</strong>
             </div>
 
             {/* Reset */}
@@ -297,7 +339,7 @@ export default function App() {
               type="button"
               onClick={handleReset}
               className="p-2 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-500 hover:text-stone-800 transition-colors"
-              title="Palauta oletusasetukset"
+              title={t.reset}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -308,50 +350,50 @@ export default function App() {
         <div className="bg-stone-50 border-t border-stone-100 px-4 sm:px-6 py-2">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 overflow-x-auto text-xs text-stone-600">
             <div className="flex items-center gap-2 whitespace-nowrap">
-              <span className="font-semibold text-stone-500 text-[11px] uppercase">Valmiit mallit:</span>
+              <span className="font-semibold text-stone-500 text-[11px] uppercase">{t.presetsTitle}</span>
               <button
                 type="button"
                 onClick={() => applyPresetProfile('double')}
                 className="px-2.5 py-1 rounded bg-white hover:bg-stone-200 border border-stone-200 text-stone-800 font-medium transition-colors"
               >
-                Standardi Parisänky 160×200
+                {t.presetDouble}
               </button>
               <button
                 type="button"
                 onClick={() => applyPresetProfile('single')}
                 className="px-2.5 py-1 rounded bg-white hover:bg-stone-200 border border-stone-200 text-stone-800 font-medium transition-colors"
               >
-                Yhden hengen 90×200
+                {t.presetSingle}
               </button>
               <button
                 type="button"
                 onClick={() => applyPresetProfile('oak')}
                 className="px-2.5 py-1 rounded bg-white hover:bg-stone-200 border border-stone-200 text-stone-800 font-medium transition-colors"
               >
-                Massiivitammi King 180×200
+                {t.presetOak}
               </button>
               <button
                 type="button"
                 onClick={() => applyPresetProfile('tatami')}
                 className="px-2.5 py-1 rounded bg-white hover:bg-stone-200 border border-stone-200 text-stone-800 font-medium transition-colors"
               >
-                Matalarunkoinen Tatami
+                {t.presetTatami}
               </button>
               <button
                 type="button"
                 onClick={() => applyPresetProfile('top_beam')}
                 className="px-2.5 py-1 rounded bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-semibold transition-colors flex items-center gap-1"
               >
-                <span>★ Tasarunko (Säleet päällä)</span>
+                <span>{t.presetTopBeam}</span>
               </button>
             </div>
 
             <div className="hidden lg:flex items-center gap-4 text-[11px] text-stone-500 font-mono">
-              <span>Rakenne: <strong className="text-stone-800">{config.constructionStyle === 'top_mounted' ? 'Tasarunko (säleet päällä)' : 'Upotettu kaukalo'}</strong></span>
+              <span>Structure: <strong className="text-stone-800">{config.constructionStyle === 'top_mounted' ? t.constructionTopMounted : t.constructionRecessed}</strong></span>
               <span>•</span>
-              <span>Säleiden tuuletusrako: <strong className="text-stone-800">{ventilation.actualGapMm} mm</strong></span>
+              <span>{t.ventilationGap}: <strong className="text-stone-800">{ventilation.actualGapMm} mm</strong></span>
               <span>•</span>
-              <span>Istumakorkeus: <strong className="text-stone-800">{config.constructionStyle === 'top_mounted' ? config.legHeight + config.frameHeight + config.slatThickness + config.mattressThickness : config.legHeight + (config.frameHeight - config.recessDepth) + config.mattressThickness} mm</strong></span>
+              <span>{t.seatingHeight}: <strong className="text-stone-800">{config.constructionStyle === 'top_mounted' ? config.legHeight + config.frameHeight + config.slatThickness + config.mattressThickness : config.legHeight + (config.frameHeight - config.recessDepth) + config.mattressThickness} mm</strong></span>
             </div>
           </div>
         </div>
@@ -369,7 +411,7 @@ export default function App() {
               }`}
             >
               <Box className="w-4 h-4" />
-              <span>1. Mitat &amp; Visuaalinen Malli</span>
+              <span>{t.tabs.design}</span>
             </button>
 
             <button
@@ -382,7 +424,7 @@ export default function App() {
               }`}
             >
               <Activity className="w-4 h-4" />
-              <span>2. Kestävyyslaskuri &amp; Pistekuorma</span>
+              <span>{t.tabs.strength}</span>
               {strengthMetrics.overallStatus !== 'safe' && (
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               )}
@@ -398,7 +440,7 @@ export default function App() {
               }`}
             >
               <TreePine className="w-4 h-4" />
-              <span>3. Puulajit &amp; Vakaus ({frameWood.nameFi.split('(')[0]})</span>
+              <span>{t.tabs.materials} ({(frameWood.name || frameWood.nameFi).split('(')[0]})</span>
             </button>
 
             <button
@@ -411,7 +453,7 @@ export default function App() {
               }`}
             >
               <ListOrdered className="w-4 h-4" />
-              <span>4. Materiaalilista ({bomData.items.length} osaa)</span>
+              <span>{t.tabs.bom} ({bomData.items.length})</span>
             </button>
 
             <button
@@ -424,7 +466,7 @@ export default function App() {
               }`}
             >
               <Scissors className="w-4 h-4" />
-              <span>5. Leikkaussuunnitelma ({cutPlan.totalStockBoards} lautaa)</span>
+              <span>{t.tabs.cutting} ({cutPlan.totalStockBoards})</span>
             </button>
           </nav>
         </div>
@@ -435,7 +477,6 @@ export default function App() {
         {/* VÄLILEHTI 1: MITAT & VISUAALINEN MALLI */}
         {activeTab === 'design' && (
           <div className="space-y-6">
-            {/* Visualisoija ylhäällä */}
             <BedVisualizer
               config={config}
               frameWood={frameWood}
@@ -444,7 +485,6 @@ export default function App() {
               ventilation={ventilation}
             />
 
-            {/* Mittalähteet alapuolella */}
             <DimensionInputs
               config={config}
               onChange={handleUpdateConfig}
