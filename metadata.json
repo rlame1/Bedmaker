@@ -1,0 +1,6 @@
+{
+  "name": "Sängynvalmistus & Kestävyyslaskuri",
+  "description": "Puusänkyjen suunnittelusovellus: mitat, materiaalilistat, leikkaussuunnitelma, puulajien kestävyyslaskenta ja pistekuormatarkastelu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
