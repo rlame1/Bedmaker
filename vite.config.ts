@@ -4,7 +4,13 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // GitHub Pages -repositorion nimi subpathia varten tuotannossa
+  const repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.split('/')[1] : '';
+  const isProd = process.env.NODE_ENV === 'production';
+  const base = isProd && repoName ? `/${repoName}/` : './';
+
   return {
+    base,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
